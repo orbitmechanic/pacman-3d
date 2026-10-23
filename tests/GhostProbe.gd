@@ -14,7 +14,7 @@ func _initialize() -> void:
 
 	var pac: Pacman = main.get_node("Pacman")
 	var game: Game = main.get_node("Game")
-	var lives_label: Label = main.get_node("UI/Lives")
+	var lives_display: LivesDisplay = main.get_node("UI/Lives")
 	var over_label: Label = main.get_node("UI/GameOver")
 	var ghosts: Array[Ghost] = []
 	for child in main.get_node("Ghosts").get_children():
@@ -25,6 +25,8 @@ func _initialize() -> void:
 	pac.set_physics_process(false)
 	game.set_process(false)
 	game.set_physics_process(false)
+	game.start_game()
+	game.tick_timers(Game.READY_SECONDS + 0.01)
 
 	var blinky := ghosts[0]
 	var pinky := ghosts[1]
@@ -45,8 +47,8 @@ func _initialize() -> void:
 	if pinky.mover.cell != Vector2i(13, 13) or inky.mover.cell != Vector2i(11, 13) \
 			or clyde.mover.cell != Vector2i(16, 13):
 		failures.append("house_cells")
-	if lives_label.text != "LIVES 3":
-		failures.append("lives_hud=%s" % lives_label.text)
+	if lives_display.lives != Game.START_LIVES:
+		failures.append("lives_hud=%d" % lives_display.lives)
 
 	# --- 4.2 scatter route targets ---------------------------------------
 	game.ghost_mode = Game.GhostMode.SCATTER
@@ -198,40 +200,62 @@ func _initialize() -> void:
 	pac.mover.place(Vector2i(13, 23))
 	game.resolve_collisions()
 	print("after_hit lives=", game.lives, " state=", game.state,
-		" frozen=", pac.mover.frozen, " hud=", lives_label.text)
+		" frozen=", pac.mover.frozen, " pucks=", lives_display.lives)
 	if game.lives != Game.START_LIVES - 1 or game.state != Game.State.DYING:
 		failures.append("hit_lives=%d state=%d" % [game.lives, game.state])
 	if not pac.mover.frozen:
 		failures.append("pac_not_frozen")
-	if lives_label.text != "LIVES 2":
-		failures.append("lives_hud_after_hit=%s" % lives_label.text)
+	if lives_display.lives != Game.START_LIVES - 1:
+		failures.append("lives_hud_after_hit=%d" % lives_display.lives)
 
 	game.tick_timers(Game.DEATH_SECONDS + 0.1)
 	print("after_death state=", game.state, " pac=", pac.mover.cell,
 		" blinky=", blinky.mover.cell, blinky.state, " pinky=", pinky.mover.cell, pinky.state,
 		" frozen=", pac.mover.frozen)
-	if game.state != Game.State.PLAYING or pac.mover.frozen:
-		failures.append("death_not_resolved")
+	if game.state != Game.State.READY:
+		failures.append("death_ready_state=%d" % game.state)
 	if pac.mover.cell != MazeData.PAC_SPAWN:
 		failures.append("pac_not_respawned=%s" % str(pac.mover.cell))
 	if blinky.mover.cell != MazeData.HOUSE_EXIT or blinky.state != Ghost.State.ROAMING:
 		failures.append("blinky_not_reset")
 	if pinky.state != Ghost.State.IN_HOUSE:
 		failures.append("pinky_not_reset=%d" % pinky.state)
+	game.tick_timers(Game.READY_SECONDS + 0.1)
+	if game.state != Game.State.PLAYING or pac.mover.frozen:
+		failures.append("ready_not_resolved=%d" % game.state)
 
-	# --- 4.10 game over ---------------------------------------------------
-	game.lives = 1
-	pinky.mover.place(Vector2i(13, 23))
-	pinky.state = Ghost.State.ROAMING
-	pac.mover.place(Vector2i(13, 23))
-	game.resolve_collisions()
-	game.tick_timers(Game.DEATH_SECONDS + 0.1)
-	print("game_over state=", game.state, " lives=", game.lives,
-		" overlay=", over_label.visible)
+	# --- 4.10 lose the remaining lives, then restart ----------------------
+	var deaths := 0
+	while game.state != Game.State.GAME_OVER and deaths < 6:
+		deaths += 1
+		pinky.mover.place(pac.mover.nearest_cell())
+		pinky.state = Ghost.State.ROAMING
+		game.resolve_collisions()
+		game.tick_timers(Game.DEATH_SECONDS + 0.1)
+		if game.state == Game.State.READY:
+			game.tick_timers(Game.READY_SECONDS + 0.1)
+	print("game_over deaths=", deaths, " state=", game.state, " lives=", game.lives,
+		" pucks=", lives_display.lives, " overlay=", over_label.visible)
 	if game.state != Game.State.GAME_OVER or game.lives != 0:
 		failures.append("game_over_state=%d lives=%d" % [game.state, game.lives])
+	if lives_display.lives != 0:
+		failures.append("game_over_pucks=%d" % lives_display.lives)
 	if not over_label.visible:
 		failures.append("game_over_overlay")
+
+	game.start_game()
+	game.tick_timers(Game.READY_SECONDS + 0.1)
+	print("restart state=", game.state, " lives=", game.lives, " score=", game.score,
+		" dots=", main.get_node("MazeView").dots_left, " pucks=", lives_display.lives,
+		" overlay=", over_label.visible)
+	if game.state != Game.State.PLAYING or game.lives != Game.START_LIVES:
+		failures.append("restart_state=%d lives=%d" % [game.state, game.lives])
+	if game.score != 0 or lives_display.lives != Game.START_LIVES:
+		failures.append("restart_hud")
+	if main.get_node("MazeView").dots_left != 258:
+		failures.append("restart_food")
+	if over_label.visible:
+		failures.append("restart_overlay")
 
 	print("failures=", failures)
 	quit(0 if failures.is_empty() else 1)

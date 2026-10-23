@@ -18,6 +18,8 @@ func _initialize() -> void:
 	pac.set_physics_process(false)
 	game.set_process(false)
 	game.set_physics_process(false)
+	game.start_game()
+	game.tick_timers(Game.READY_SECONDS + 0.01)
 	var mover := pac.mover
 	mover.tiles_per_second = 10.0
 	var failures: Array[String] = []
@@ -92,9 +94,22 @@ func _initialize() -> void:
 	mover.place(last_pellet + Vector2i.DOWN)
 	pac.steer(Vector2i.UP)
 	_tick_until_arrivals(mover, 1)
-	print("after_clear level=", game.level, " dots=", maze.dots_left,
-		" pellets=", maze.pellets_left, " cell=", mover.cell,
-		" score=", game.score, " hud=", level_label.text)
+	print("after_clear state=", game.state, " level=", game.level,
+		" dots=", maze.dots_left, " pellets=", maze.pellets_left,
+		" cell=", mover.cell, " score=", game.score)
+	if game.state != Game.State.LEVEL_CLEAR:
+		failures.append("clear_state=%d" % game.state)
+	if game.level != 1:
+		failures.append("level_during_clear=%d" % game.level)
+	if maze.food_remaining() != 0:
+		failures.append("board_cleared_early")
+
+	game.tick_timers(Game.LEVEL_CLEAR_SECONDS + 0.1)
+	print("next_level state=", game.state, " level=", game.level,
+		" dots=", maze.dots_left, " pellets=", maze.pellets_left,
+		" cell=", mover.cell, " hud=", level_label.text)
+	if game.state != Game.State.READY:
+		failures.append("ready_after_clear=%d" % game.state)
 	if game.level != 2:
 		failures.append("level=%d" % game.level)
 	if maze.dots_left != 258 or maze.pellets_left != 4:
@@ -105,6 +120,11 @@ func _initialize() -> void:
 		failures.append("score_after_clear=%d" % game.score)
 	if level_label.text != "LEVEL 2":
 		failures.append("level_hud=%s" % level_label.text)
+
+	game.tick_timers(Game.READY_SECONDS + 0.1)
+	if game.state != Game.State.PLAYING:
+		failures.append("playing_after_ready=%d" % game.state)
+	print("level_2_playing=", game.state == Game.State.PLAYING)
 
 	print("failures=", failures)
 	quit(0 if failures.is_empty() else 1)

@@ -14,6 +14,8 @@ func _initialize() -> void:
 	pac.set_physics_process(false)
 	game.set_process(false)
 	game.set_physics_process(false)
+	game.start_game()
+	game.tick_timers(Game.READY_SECONDS + 0.01)
 	var mover := pac.mover
 	var failures: Array[String] = []
 

@@ -1,10 +1,11 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource path="res://scripts/Main.gd" type="Script" id=1]
 [ext_resource path="res://scripts/MazeView.gd" type="Script" id=2]
 [ext_resource path="res://scenes/Pacman.tscn" type="PackedScene" id=3]
 [ext_resource path="res://scripts/Game.gd" type="Script" id=4]
 [ext_resource path="res://scenes/Ghost.tscn" type="PackedScene" id=5]
+[ext_resource path="res://scripts/LivesDisplay.gd" type="Script" id=6]
 
 [sub_resource type="Environment" id="Environment_1"]
 background_mode = 1
@@ -76,13 +77,12 @@ offset_bottom = 100.0
 text = "SCORE 0"
 theme_override_font_sizes/font_size = 24
 
-[node name="Lives" type="Label" parent="UI"]
+[node name="Lives" type="Control" parent="UI"]
 offset_left = 24.0
-offset_top = 100.0
-offset_right = 420.0
+offset_top = 98.0
+offset_right = 170.0
 offset_bottom = 132.0
-text = "LIVES 3"
-theme_override_font_sizes/font_size = 20
+script = ExtResource("6")
 
 [node name="Level" type="Label" parent="UI"]
 anchor_left = 1.0
@@ -94,6 +94,89 @@ offset_bottom = 100.0
 text = "LEVEL 1"
 horizontal_alignment = 2
 theme_override_font_sizes/font_size = 24
+
+[node name="TitleScreen" type="Control" parent="UI"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Dim" type="ColorRect" parent="UI/TitleScreen"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.01, 0.01, 0.04, 0.72)
+
+[node name="Center" type="VBoxContainer" parent="UI/TitleScreen"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -430.0
+offset_top = -180.0
+offset_right = 430.0
+offset_bottom = 120.0
+theme_override_constants/separation = 14
+
+[node name="BigTitle" type="Label" parent="UI/TitleScreen/Center"]
+text = "PAC-MAN 3D"
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(1, 0.85, 0.12, 1)
+theme_override_font_sizes/font_size = 86
+
+[node name="Tagline" type="Label" parent="UI/TitleScreen/Center"]
+text = "A 3D tribute to the 1980 arcade classic"
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(0.72, 0.75, 0.9, 1)
+theme_override_font_sizes/font_size = 20
+
+[node name="Gap" type="Control" parent="UI/TitleScreen/Center"]
+custom_minimum_size = Vector2(0, 24)
+
+[node name="Prompt" type="Label" parent="UI/TitleScreen/Center"]
+text = "PRESS ENTER TO START"
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(1, 0.9, 0.45, 1)
+theme_override_font_sizes/font_size = 26
+
+[node name="Controls" type="Label" parent="UI/TitleScreen/Center"]
+text = "WASD / ARROW KEYS TO MOVE"
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(0.6, 0.63, 0.78, 1)
+theme_override_font_sizes/font_size = 16
+
+[node name="Ready" type="Label" parent="UI"]
+visible = false
+anchor_left = 0.5
+anchor_top = 0.55
+anchor_right = 0.5
+anchor_bottom = 0.55
+offset_left = -300.0
+offset_top = -40.0
+offset_right = 300.0
+offset_bottom = 40.0
+text = "READY!"
+horizontal_alignment = 1
+vertical_alignment = 1
+theme_override_colors/font_color = Color(1, 0.85, 0.12, 1)
+theme_override_font_sizes/font_size = 54
+
+[node name="LevelClear" type="Label" parent="UI"]
+visible = false
+anchor_left = 0.5
+anchor_top = 0.55
+anchor_right = 0.5
+anchor_bottom = 0.55
+offset_left = -320.0
+offset_top = -40.0
+offset_right = 320.0
+offset_bottom = 40.0
+text = "LEVEL CLEAR"
+horizontal_alignment = 1
+vertical_alignment = 1
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0.02, 0.05, 0.2, 1)
+theme_override_constants/outline_size = 12
+theme_override_font_sizes/font_size = 54
 
 [node name="GameOver" type="Label" parent="UI"]
 visible = false
@@ -110,3 +193,19 @@ horizontal_alignment = 1
 vertical_alignment = 1
 theme_override_colors/font_color = Color(1, 0.25, 0.25, 1)
 theme_override_font_sizes/font_size = 64
+
+[node name="GameOverHint" type="Label" parent="UI"]
+visible = false
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -320.0
+offset_top = 64.0
+offset_right = 320.0
+offset_bottom = 108.0
+text = "PRESS ENTER TO PLAY AGAIN"
+horizontal_alignment = 1
+vertical_alignment = 1
+theme_override_colors/font_color = Color(1, 0.9, 0.45, 1)
+theme_override_font_sizes/font_size = 24

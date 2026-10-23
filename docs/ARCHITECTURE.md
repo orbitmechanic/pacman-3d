@@ -1,9 +1,8 @@
 # Architecture
 
-Status: **maze, Pac-Man, eating/scoring, ghosts, lives and game over
-implemented** (PRs #1-#4). The title/attract flow, death animation and final
-polish land in #5. This document evolves with each merged PR; keep sections in
-sync with the code.
+Status: **playable v0.1.0** — maze, Pac-Man, scoring, ghosts, lives and the
+full title → play → death / level-clear → game-over loop (PRs #1-#5). This
+document evolves with each merged PR; keep sections in sync with the code.
 
 ## Design pillars
 
@@ -34,6 +33,7 @@ sync with the code.
 | `scripts/GhostMesh.gd` | generated ghost body: dome, sides, scalloped hem |
 | `scripts/Game.gd` | score, levels, frightened window, scatter/chase waves, collisions, lives, game over |
 | `scripts/Main.gd` | scene wiring, HUD updates, dev hooks (capture, demo, frighten) |
+| `scripts/LivesDisplay.gd` | procedural remaining-lives pucks |
 | `tests/*.gd` | headless `SceneTree` probes: logic assertions + deterministic state checks |
 
 ## Movement
@@ -88,6 +88,38 @@ reset of Pac-Man and the whole cast) or, while frightened, is eaten for
 200/400/800/1600 points (chain resets on the next pellet or when Pac-Man
 dies). At zero lives the game enters `GAME_OVER`. Clearing the board refills
 food, keeps lives, resets the cast and advances the level.
+
+## Game states
+
+`Game` is a small state machine; `Main` maps it onto the HUD, the camera and
+the overlays. All transitions are exposed through `state_changed`.
+
+```
+TITLE ──start──> READY ──2 s──> PLAYING ──food=0──> LEVEL_CLEAR ──1.8 s──> READY
+                               │                        (next level, faster)
+                               └──hit──> DYING ──1.2 s──> READY … or GAME_OVER
+                                                                    │
+                                                            start (Enter)
+                                                                    ▼
+                                                                 READY
+```
+
+- **TITLE** — board frozen, title screen up, camera on the wide title framing.
+  Enter/Space (`start` action) begins a run.
+- **READY** — 2 s freeze with Pac-Man and the cast posed at their spawns; the
+  camera eases from the title framing to the play framing.
+- **PLAYING** — input, ghosts, food and collisions are live.
+- **DYING** — 1.2 s freeze, Pac-Man shrinks and spins, camera shake; then a
+  fresh READY (or GAME_OVER at zero lives).
+- **LEVEL_CLEAR** — 1.8 s hold with the walls pulsing white and `LEVEL CLEAR`
+  on screen; then the next level refills the board, re-tints the walls and
+  plays 6 % faster per level (capped at +35 %).
+- **GAME_OVER** — board frozen, red overlay and a restart prompt; Enter
+  starts a new run.
+
+Presentation details live outside the state machine: `MazeView` owns the wall
+palette (one colour per level, `set_flash_amount`) and `LivesDisplay` draws
+the remaining-life pucks with `_draw()`.
 
 ## Validation
 
