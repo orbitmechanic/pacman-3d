@@ -1,0 +1,11 @@
+# Godot 4+ generated caches and imports
+.godot/
+*.translation
+
+# Build/export outputs
+build/
+export/
+web/
+
+# OS noise
+.DS_Store

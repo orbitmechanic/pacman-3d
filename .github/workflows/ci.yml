@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  validate:
+    name: Import, run & probe
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Godot
+        uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.7.2
+
+      - name: Gate 1 - import
+        run: godot --headless --import
+
+      - name: Gate 1 - run main scene 120 frames
+        run: godot --headless --quit-after 120
+
+      - name: Gate 2 - smoke probe
+        run: godot --headless -s res://tests/SmokeProbe.gd
+
+      - name: Gate 2 - maze probe
+        if: hashFiles('scripts/MazeData.gd') != ''
+        run: godot --headless -s res://tests/MazeProbe.gd
