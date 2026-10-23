@@ -24,13 +24,6 @@ func _process(time: float) -> void:
 	for node in _pellet_nodes:
 		node.scale = Vector3.ONE * pulse
 
-static func tile_to_world(cell: Vector2i) -> Vector3:
-	return Vector3(
-		cell.x - MazeData.WIDTH / 2.0 + 0.5,
-		0.0,
-		cell.y - MazeData.HEIGHT / 2.0 + 0.5
-	)
-
 func _build_floor() -> void:
 	var mat := StandardMaterial3D.new()
 	mat.albedo_color = Color(0.03, 0.03, 0.09)
@@ -67,7 +60,7 @@ func _build_walls() -> void:
 	multimesh.mesh = box
 	multimesh.instance_count = visible_walls.size()
 	for i in visible_walls.size():
-		var pos := tile_to_world(visible_walls[i]) + Vector3(0.0, WALL_HEIGHT / 2.0, 0.0)
+		var pos := MazeData.tile_to_world(visible_walls[i]) + Vector3(0.0, WALL_HEIGHT / 2.0, 0.0)
 		multimesh.set_instance_transform(i, Transform3D(Basis(), pos))
 
 	var mmi := MultiMeshInstance3D.new()
@@ -119,7 +112,7 @@ static func _food_node(mesh: Mesh, mat: Material, cell: Vector2i, y: float) -> M
 	var mi := MeshInstance3D.new()
 	mi.mesh = mesh
 	mi.material_override = mat
-	mi.position = tile_to_world(cell) + Vector3(0.0, y, 0.0)
+	mi.position = MazeData.tile_to_world(cell) + Vector3(0.0, y, 0.0)
 	return mi
 
 static func _dot_material(albedo: Color, emission: Color) -> StandardMaterial3D:

@@ -26,5 +26,7 @@ jobs:
         run: godot --headless -s res://tests/SmokeProbe.gd
 
       - name: Gate 2 - maze probe
-        if: hashFiles('scripts/MazeData.gd') != ''
         run: godot --headless -s res://tests/MazeProbe.gd
+
+      - name: Gate 2 - pac-man movement probe
+        run: godot --headless -s res://tests/PacProbe.gd

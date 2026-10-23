@@ -74,6 +74,14 @@ static func is_walkable(cell: Vector2i, allow_door := false) -> bool:
 static func wrap(cell: Vector2i) -> Vector2i:
 	return Vector2i(wrapi(cell.x, 0, WIDTH), cell.y)
 
+## Tile (col,row) -> world position of the tile center on the floor plane.
+static func tile_to_world(cell: Vector2i) -> Vector3:
+	return Vector3(
+		cell.x - WIDTH / 2.0 + 0.5,
+		0.0,
+		cell.y - HEIGHT / 2.0 + 0.5
+	)
+
 static func dot_cells() -> Array[Vector2i]:
 	var cells: Array[Vector2i] = []
 	for row in HEIGHT:
