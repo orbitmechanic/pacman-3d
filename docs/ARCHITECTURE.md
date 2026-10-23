@@ -1,7 +1,7 @@
 # Architecture
 
-Status: **maze + board + Pac-Man movement implemented** (PRs #1-#2). Ghosts,
-scoring, and game states are in progress. This document evolves with each merged PR; keep
+Status: **maze, Pac-Man, and eating/scoring implemented** (PRs #1-#3). Ghosts
+and the title/game-over flow are next. This document evolves with each merged PR; keep
 sections in sync with the code.
 
 ## Design pillars
@@ -26,7 +26,8 @@ sections in sync with the code.
 | `scripts/Pacman.gd` | input buffering, chomp animation, wedge mouth facing travel (done) |
 | `scripts/PacMesh.gd` | generated sphere with a mouth wedge (SphereMesh has no phi sweep in 4.x) |
 | `scripts/Ghost.gd` | chase/scatter/frightened/eaten state machine |
-| `scripts/Main.gd` | game state machine, score/lives/level, HUD, camera |
+| `scripts/Game.gd` | score, level progression, frightened window; ghost-facing hooks (in progress) |
+| `scripts/Main.gd` | scene wiring, HUD updates, dev hooks (capture, demo autopilot) |
 | `tests/*.gd` | headless `SceneTree` probes: logic assertions + screenshots |
 
 ## Validation

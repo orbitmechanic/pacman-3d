@@ -50,6 +50,12 @@ func steer(direction: Vector2i) -> void:
 	desired_dir = direction
 	mover.request(direction)
 
+func respawn() -> void:
+	desired_dir = Vector2i.ZERO
+	mover.place(MazeData.PAC_SPAWN)
+	position = mover.world_position()
+	body.rotation.y = 0.0
+
 func _decide(at: Vector2i) -> Vector2i:
 	if desired_dir != Vector2i.ZERO and MazeData.is_walkable(at + desired_dir):
 		return desired_dir
