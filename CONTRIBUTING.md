@@ -20,6 +20,9 @@
 3. PRs must keep the validation gates green; CI runs them automatically.
 4. Update `docs/ARCHITECTURE.md` in the same PR when the structure changes —
    docs travel with code.
+5. New gameplay rule ⇒ new assertion in the matching probe. Probes are the
+   contract; a PR that changes behaviour without touching one needs a reason
+   in its description.
 
 ## Validation gates
 
@@ -33,11 +36,21 @@ godot --headless --quit-after 120
 # Gate 2 - logic probes (deterministic, headless, assert via exit code)
 godot --headless -s res://tests/SmokeProbe.gd
 godot --headless -s res://tests/MazeProbe.gd
+godot --headless -s res://tests/PacProbe.gd
+godot --headless -s res://tests/ScoreProbe.gd
+godot --headless -s res://tests/GhostProbe.gd
 
 # Gate 3 - visual check (real window, auto-quit)
-godot --path . --position 100,100 -- --capture /tmp/shot.png --frames 90
+godot --path . --position 100,100 -- --capture /tmp/shot.png --frames 120 --demo
 ```
 
-`--capture <path> --frames N` is a dev hook in `scripts/Main.gd`: it renders
-N frames then writes a PNG and exits, so screenshots are reproducible in CI
-logs and code review.
+Dev hooks live in `scripts/Main.gd`:
+
+| Hook | Effect |
+| --- | --- |
+| `--capture <path> --frames N` | render N frames, write a PNG, exit 0 |
+| `--demo` | left-hand-rule autopilot (attract mode) |
+| `--frighten` | open the frightened window at start (screenshot aid) |
+
+`--capture` makes screenshots reproducible, so reviewers can re-render a PR's
+images from the branch itself.

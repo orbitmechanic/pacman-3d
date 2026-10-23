@@ -33,3 +33,6 @@ jobs:
 
       - name: Gate 2 - scoring probe
         run: godot --headless -s res://tests/ScoreProbe.gd
+
+      - name: Gate 2 - ghost behaviour probe
+        run: godot --headless -s res://tests/GhostProbe.gd
