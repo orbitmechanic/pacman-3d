@@ -56,3 +56,19 @@ Dev hooks live in `scripts/Main.gd`:
 
 `--capture` makes screenshots reproducible, so reviewers can re-render a PR's
 images from the branch itself.
+
+### Web build
+
+The Web preset is `variant/thread_support=false`, so the export needs no
+COOP/COEP headers and runs on GitHub Pages:
+
+```bash
+mkdir -p build/web
+godot --headless --import
+godot --headless --export-release "Web" build/web/index.html
+python3 -m http.server 8060 -d build/web   # verify at http://127.0.0.1:8060
+```
+
+`build/` is git-ignored. Pushing to `main` runs `.github/workflows/pages.yml`,
+which re-runs every gate, exports and deploys to Pages; the same workflow can
+be triggered manually.

@@ -121,6 +121,22 @@ Presentation details live outside the state machine: `MazeView` owns the wall
 palette (one colour per level, `set_flash_amount`) and `LivesDisplay` draws
 the remaining-life pucks with `_draw()`.
 
+## Shipping
+
+The same project ships to desktop and the browser:
+
+- **GL Compatibility renderer** was chosen up front so the Web export is a
+  real target rather than a port.
+- **Web export runs without threads** (`variant/thread_support=false`) — no
+  COOP/COEP response headers needed, so a stock static host works.
+- **Procedural art pays off twice**: the Web `.pck` is ~60 KB, with only the
+  engine's `.wasm` carrying the weight (gzip on the host handles the rest).
+- `export_presets.cfg` excludes `tests/` and `docs/` from the package so
+  probes and documentation never reach players.
+- `.github/workflows/pages.yml` gates on the probes, exports, and deploys to
+  GitHub Pages (`https://orbitmechanic.github.io/pacman-3d/`). Export
+  templates are cached between runs.
+
 ## Validation
 
 See *Validation gates* in [CONTRIBUTING.md](../CONTRIBUTING.md). Current

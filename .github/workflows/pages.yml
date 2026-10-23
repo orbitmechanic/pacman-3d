@@ -1,0 +1,77 @@
+name: Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Godot
+        uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.7.2
+
+      - name: Cache web export templates
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/godot/export_templates/4.7.2.stable
+          key: godot-web-templates-4.7.2-v1
+
+      - name: Install web export templates
+        run: |
+          DIR="$HOME/.local/share/godot/export_templates/4.7.2.stable"
+          mkdir -p "$DIR"
+          if [ ! -f "$DIR/web_release.zip" ]; then
+            curl -fL --retry 3 -o "$RUNNER_TEMP/templates.tpz" \
+              "https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_export_templates.tpz"
+            unzip -j -o "$RUNNER_TEMP/templates.tpz" "templates/web_*" -d "$DIR"
+            echo "4.7.2.stable" > "$DIR/version.txt"
+          fi
+          ls -la "$DIR" | head
+
+      - name: Gate 1 - import and run
+        run: |
+          godot --headless --import
+          godot --headless --quit-after 120
+
+      - name: Gate 2 - probes
+        run: |
+          for probe in Smoke Maze Pac Score Ghost; do
+            godot --headless -s "res://tests/${probe}Probe.gd"
+          done
+
+      - name: Export web build
+        run: |
+          mkdir -p build/web
+          godot --headless --export-release "Web" build/web/index.html
+          ls -la build/web
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/web
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

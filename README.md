@@ -1,6 +1,9 @@
 # Pac-Man 3D
 
 [![CI](https://github.com/orbitmechanic/pacman-3d/actions/workflows/ci.yml/badge.svg)](https://github.com/orbitmechanic/pacman-3d/actions/workflows/ci.yml)
+[![Pages](https://github.com/orbitmechanic/pacman-3d/actions/workflows/pages.yml/badge.svg)](https://github.com/orbitmechanic/pacman-3d/actions/workflows/pages.yml)
+
+**▶ [Play in your browser](https://orbitmechanic.github.io/pacman-3d/)** — no install, keyboard only.
 
 A 3D take on the classic maze chase: munch dots, dodge ghosts, grab power
 pellets, flip the hunt — built from scratch in **Godot 4.7** (GDScript, GL
@@ -35,6 +38,14 @@ effects are procedural geometry and code.
    ```bash
    godot --path .
    ```
+
+Web builds (thread support off, so any static host works):
+
+```bash
+mkdir -p build/web
+godot --headless --export-release "Web" build/web/index.html
+python3 -m http.server 8060 -d build/web   # http://127.0.0.1:8060
+```
 
 ## Development
 
