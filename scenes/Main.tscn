@@ -1,6 +1,7 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource path="res://scripts/Main.gd" type="Script" id=1]
+[ext_resource path="res://scripts/MazeView.gd" type="Script" id=2]
 
 [sub_resource type="Environment" id="Environment_1"]
 background_mode = 1
@@ -8,13 +9,6 @@ background_color = Color(0.016, 0.016, 0.063, 1)
 ambient_light_source = 3
 ambient_light_color = Color(0.35, 0.35, 0.5, 1)
 ambient_light_energy = 0.5
-
-[sub_resource type="PlaneMesh" id="PlaneMesh_1"]
-size = Vector2(28, 31)
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_1"]
-albedo_color = Color(0.04, 0.04, 0.12, 1)
-roughness = 0.9
 
 [node name="Main" type="Node3D"]
 script = ExtResource("1")
@@ -27,13 +21,13 @@ rotation_degrees = Vector3(-55, -25, 0)
 shadow_enabled = true
 
 [node name="Camera3D" type="Camera3D" parent="."]
-position = Vector3(14, 30, 39.5)
-rotation_degrees = Vector3(-51, 0, 0)
+position = Vector3(0, 33, 15)
+rotation_degrees = Vector3(-68, 0, 0)
+fov = 50.0
 current = true
 
-[node name="Floor" type="MeshInstance3D" parent="."]
-mesh = SubResource("PlaneMesh_1")
-material_override = SubResource("StandardMaterial3D_1")
+[node name="MazeView" type="Node3D" parent="."]
+script = ExtResource("2")
 
 [node name="UI" type="CanvasLayer" parent="."]
 
@@ -42,5 +36,5 @@ offset_left = 24.0
 offset_top = 16.0
 offset_right = 700.0
 offset_bottom = 64.0
-text = "PAC-MAN 3D — scaffold"
+text = "PAC-MAN 3D — maze"
 theme_override_font_sizes/font_size = 28

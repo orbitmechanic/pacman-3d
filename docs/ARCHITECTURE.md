@@ -1,7 +1,8 @@
 # Architecture
 
-Status: **scaffold**. This document evolves with each merged PR; keep sections
-in sync with the code.
+Status: **maze + board render implemented** (PR #1). Movement, ghosts, and game
+states are in progress. This document evolves with each merged PR; keep
+sections in sync with the code.
 
 ## Design pillars
 
