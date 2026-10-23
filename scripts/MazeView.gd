@@ -2,7 +2,8 @@ class_name MazeView
 extends Node3D
 
 ## Builds the 3D board from MazeData: floor, one instanced draw call of wall
-## boxes, dot/pellet meshes. Pure presentation - no game logic here.
+## boxes, dot/pellet meshes. Also owns the remaining-food bookkeeping, since
+## food removal is a view concern the game controller queries.
 
 const WALL_HEIGHT := 0.85
 const DOT_Y := 0.35
@@ -10,19 +11,88 @@ const PELLET_Y := 0.5
 
 var dots: Node3D
 var pellets: Node3D
-var _pellet_nodes: Array[MeshInstance3D] = []
+var dots_left := 0
+var pellets_left := 0
+
+var _dot_nodes: Dictionary = {}
+var _pellet_nodes: Dictionary = {}
 
 func _ready() -> void:
 	_build_floor()
 	_build_walls()
-	_build_dots()
-	_build_pellets()
+	dots = Node3D.new()
+	dots.name = "Dots"
+	add_child(dots)
+	pellets = Node3D.new()
+	pellets.name = "Pellets"
+	add_child(pellets)
+	_respawn_food()
 
 func _process(time: float) -> void:
 	# Gentle always-on pulse for power pellets; presentation only.
 	var pulse := 1.0 + 0.15 * sin(time * 4.0)
-	for node in _pellet_nodes:
+	for node in _pellet_nodes.values():
 		node.scale = Vector3.ONE * pulse
+
+func food_remaining() -> int:
+	return dots_left + pellets_left
+
+## Removes the dot on `cell`; returns true only if one was actually eaten,
+## so callers can score exactly once per dot.
+func eat_dot(cell: Vector2i) -> bool:
+	var node: MeshInstance3D = _dot_nodes.get(cell)
+	if node == null:
+		return false
+	_dot_nodes.erase(cell)
+	node.queue_free()
+	dots_left -= 1
+	return true
+
+func eat_pellet(cell: Vector2i) -> bool:
+	var node: MeshInstance3D = _pellet_nodes.get(cell)
+	if node == null:
+		return false
+	_pellet_nodes.erase(cell)
+	node.queue_free()
+	pellets_left -= 1
+	return true
+
+## Frees any remaining food and lays out a fresh board (next level).
+func reset_food() -> void:
+	for node in _dot_nodes.values():
+		node.queue_free()
+	for node in _pellet_nodes.values():
+		node.queue_free()
+	_dot_nodes.clear()
+	_pellet_nodes.clear()
+	_respawn_food()
+
+func _respawn_food() -> void:
+	dots_left = 0
+	pellets_left = 0
+	var dot_mesh := SphereMesh.new()
+	dot_mesh.radius = 0.09
+	dot_mesh.height = 0.18
+	dot_mesh.radial_segments = 8
+	dot_mesh.rings = 4
+	var dot_mat := _food_material(Color(0.99, 0.8, 0.75), Color(0.6, 0.35, 0.3))
+	for cell in MazeData.dot_cells():
+		var node := _food_node(dot_mesh, dot_mat, cell, DOT_Y)
+		dots.add_child(node)
+		_dot_nodes[cell] = node
+		dots_left += 1
+
+	var pellet_mesh := SphereMesh.new()
+	pellet_mesh.radius = 0.22
+	pellet_mesh.height = 0.44
+	pellet_mesh.radial_segments = 12
+	pellet_mesh.rings = 6
+	var pellet_mat := _food_material(Color(1.0, 0.9, 0.4), Color(0.8, 0.6, 0.1))
+	for cell in MazeData.pellet_cells():
+		var node := _food_node(pellet_mesh, pellet_mat, cell, PELLET_Y)
+		pellets.add_child(node)
+		_pellet_nodes[cell] = node
+		pellets_left += 1
 
 func _build_floor() -> void:
 	var mat := StandardMaterial3D.new()
@@ -37,7 +107,6 @@ func _build_floor() -> void:
 	add_child(floor_mi)
 
 func _build_walls() -> void:
-	var wall_cells := MazeData.wall_cells()
 	var box := BoxMesh.new()
 	box.size = Vector3(1.0, WALL_HEIGHT, 1.0)
 	var mat := StandardMaterial3D.new()
@@ -51,7 +120,7 @@ func _build_walls() -> void:
 	# Render only wall tiles that touch walkable space or the board edge:
 	# wall bands become hollow outlines instead of solid blocks (classic look).
 	var visible_walls: Array[Vector2i] = []
-	for cell in wall_cells:
+	for cell in MazeData.wall_cells():
 		if _wall_is_visible(cell):
 			visible_walls.append(cell)
 
@@ -80,34 +149,6 @@ static func _wall_is_visible(cell: Vector2i) -> bool:
 				return true
 	return false
 
-func _build_dots() -> void:
-	dots = Node3D.new()
-	dots.name = "Dots"
-	add_child(dots)
-	var mesh := SphereMesh.new()
-	mesh.radius = 0.09
-	mesh.height = 0.18
-	mesh.radial_segments = 8
-	mesh.rings = 4
-	var mat := _dot_material(Color(0.99, 0.8, 0.75), Color(0.6, 0.35, 0.3))
-	for cell in MazeData.dot_cells():
-		dots.add_child(_food_node(mesh, mat, cell, DOT_Y))
-
-func _build_pellets() -> void:
-	pellets = Node3D.new()
-	pellets.name = "Pellets"
-	add_child(pellets)
-	var mesh := SphereMesh.new()
-	mesh.radius = 0.22
-	mesh.height = 0.44
-	mesh.radial_segments = 12
-	mesh.rings = 6
-	var mat := _dot_material(Color(1.0, 0.9, 0.4), Color(0.8, 0.6, 0.1))
-	for cell in MazeData.pellet_cells():
-		var node := _food_node(mesh, mat, cell, PELLET_Y)
-		pellets.add_child(node)
-		_pellet_nodes.append(node)
-
 static func _food_node(mesh: Mesh, mat: Material, cell: Vector2i, y: float) -> MeshInstance3D:
 	var mi := MeshInstance3D.new()
 	mi.mesh = mesh
@@ -115,7 +156,7 @@ static func _food_node(mesh: Mesh, mat: Material, cell: Vector2i, y: float) -> M
 	mi.position = MazeData.tile_to_world(cell) + Vector3(0.0, y, 0.0)
 	return mi
 
-static func _dot_material(albedo: Color, emission: Color) -> StandardMaterial3D:
+static func _food_material(albedo: Color, emission: Color) -> StandardMaterial3D:
 	var mat := StandardMaterial3D.new()
 	mat.albedo_color = albedo
 	mat.emission_enabled = true

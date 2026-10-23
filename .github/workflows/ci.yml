@@ -30,3 +30,6 @@ jobs:
 
       - name: Gate 2 - pac-man movement probe
         run: godot --headless -s res://tests/PacProbe.gd
+
+      - name: Gate 2 - scoring probe
+        run: godot --headless -s res://tests/ScoreProbe.gd

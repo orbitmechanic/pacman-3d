@@ -5,17 +5,30 @@ extends Node3D
 ##   --demo                       : left-hand-rule autopilot (attract mode)
 
 @onready var pac: Pacman = $Pacman
+@onready var game: Game = $Game
+@onready var maze: MazeView = $MazeView
 @onready var title: Label = $UI/Title
+@onready var score_label: Label = $UI/Score
+@onready var level_label: Label = $UI/Level
 
 var _demo := false
 
 func _ready() -> void:
 	_demo = OS.get_cmdline_user_args().has("--demo")
+	game.setup(pac, maze)
+	game.score_changed.connect(_on_score_changed)
+	game.level_changed.connect(_on_level_changed)
 	pac.arrived.connect(_on_pac_arrived)
 	if _demo:
 		title.text = "PAC-MAN 3D — demo"
 		pac.steer(Vector2i.LEFT)
 	_maybe_capture_on_exit()
+
+func _on_score_changed(score: int) -> void:
+	score_label.text = "SCORE %d" % score
+
+func _on_level_changed(level: int) -> void:
+	level_label.text = "LEVEL %d" % level
 
 func _on_pac_arrived(cell: Vector2i) -> void:
 	if not _demo:
