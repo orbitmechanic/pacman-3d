@@ -9,6 +9,7 @@ signal arrived(cell: Vector2i)
 
 const RADIUS := 0.46
 const BODY_Y := 0.48
+const BASE_SPEED := 7.0
 const MOUTH_GAP_MAX := 120.0
 const CHOMP_RATE := 16.0
 
@@ -19,9 +20,11 @@ var desired_dir := Vector2i.ZERO
 
 var _chomp := 0.0
 var _gap := 0.0
+var _death_t := -1.0
 
 func _ready() -> void:
 	mover = GridMover.new(MazeData.PAC_SPAWN)
+	mover.tiles_per_second = BASE_SPEED
 	mover.decide = _decide
 	mover.arrived.connect(_on_mover_arrived)
 	body.mesh = PacMesh.build(RADIUS, 0.0)
@@ -30,17 +33,20 @@ func _ready() -> void:
 	position = mover.world_position()
 
 func _physics_process(delta: float) -> void:
-	if Input.is_action_just_pressed("move_up"):
+	if _death_t < 0.0 and Input.is_action_just_pressed("move_up"):
 		steer(Vector2i.UP)
-	elif Input.is_action_just_pressed("move_down"):
+	elif _death_t < 0.0 and Input.is_action_just_pressed("move_down"):
 		steer(Vector2i.DOWN)
-	elif Input.is_action_just_pressed("move_left"):
+	elif _death_t < 0.0 and Input.is_action_just_pressed("move_left"):
 		steer(Vector2i.LEFT)
-	elif Input.is_action_just_pressed("move_right"):
+	elif _death_t < 0.0 and Input.is_action_just_pressed("move_right"):
 		steer(Vector2i.RIGHT)
 	mover.tick(delta)
 
 func _process(delta: float) -> void:
+	if _death_t >= 0.0:
+		_death_step(delta)
+		return
 	position = mover.world_position()
 	_face_travel()
 	_chomp_step(delta)
@@ -50,8 +56,15 @@ func steer(direction: Vector2i) -> void:
 	desired_dir = direction
 	mover.request(direction)
 
+## Shrink-and-spin exit used by the DYING state.
+func play_death() -> void:
+	_death_t = 0.0
+
 func respawn() -> void:
 	desired_dir = Vector2i.ZERO
+	_death_t = -1.0
+	body.visible = true
+	body.scale = Vector3.ONE
 	mover.place(MazeData.PAC_SPAWN)
 	position = mover.world_position()
 	body.rotation.y = 0.0
@@ -65,6 +78,14 @@ func _decide(at: Vector2i) -> Vector2i:
 
 func _on_mover_arrived(cell: Vector2i) -> void:
 	arrived.emit(cell)
+
+func _death_step(delta: float) -> void:
+	_death_t += delta
+	var k := clampf(_death_t / 1.0, 0.0, 1.0)
+	body.scale = Vector3.ONE * (1.0 - k)
+	body.rotation.y += delta * 14.0
+	if k >= 1.0:
+		body.visible = false
 
 func _face_travel() -> void:
 	if mover.dir == Vector2i.ZERO:

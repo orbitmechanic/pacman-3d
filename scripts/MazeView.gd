@@ -8,6 +8,14 @@ extends Node3D
 const WALL_HEIGHT := 0.85
 const DOT_Y := 0.35
 const PELLET_Y := 0.5
+## Wall colour per level: [albedo, emission]. The board re-tints each level.
+const LEVEL_TINTS := [
+	[Color(0.05, 0.09, 0.5), Color(0.05, 0.11, 0.55)],
+	[Color(0.03, 0.3, 0.36), Color(0.04, 0.45, 0.5)],
+	[Color(0.27, 0.07, 0.44), Color(0.4, 0.1, 0.6)],
+	[Color(0.42, 0.22, 0.04), Color(0.6, 0.3, 0.05)],
+	[Color(0.05, 0.33, 0.12), Color(0.08, 0.5, 0.18)],
+]
 
 var dots: Node3D
 var pellets: Node3D
@@ -16,6 +24,9 @@ var pellets_left := 0
 
 var _dot_nodes: Dictionary = {}
 var _pellet_nodes: Dictionary = {}
+var _wall_mat: StandardMaterial3D
+var _tint_index := 0
+var _flash_amount := 0.0
 
 func _ready() -> void:
 	_build_floor()
@@ -33,6 +44,20 @@ func _process(time: float) -> void:
 	var pulse := 1.0 + 0.15 * sin(time * 4.0)
 	for node in _pellet_nodes.values():
 		node.scale = Vector3.ONE * pulse
+
+## Re-colour the walls for `level` (cycles through LEVEL_TINTS).
+func apply_level_tint(level: int) -> void:
+	_tint_index = posmod(level - 1, LEVEL_TINTS.size())
+	_flash_amount = 0.0
+	_apply_wall_colors()
+
+## Level-clear flash: 0 = level tint, 1 = white-hot walls.
+func set_flash_amount(amount: float) -> void:
+	var clamped := clampf(amount, 0.0, 1.0)
+	if absf(clamped - _flash_amount) < 0.01:
+		return
+	_flash_amount = clamped
+	_apply_wall_colors()
 
 func food_remaining() -> int:
 	return dots_left + pellets_left
@@ -116,6 +141,8 @@ func _build_walls() -> void:
 	mat.emission = Color(0.05, 0.11, 0.55)
 	mat.emission_energy_multiplier = 0.6
 	box.material = mat
+	_wall_mat = mat
+	_apply_wall_colors()
 
 	# Render only wall tiles that touch walkable space or the board edge:
 	# wall bands become hollow outlines instead of solid blocks (classic look).
@@ -136,6 +163,14 @@ func _build_walls() -> void:
 	mmi.name = "Walls"
 	mmi.multimesh = multimesh
 	add_child(mmi)
+
+func _apply_wall_colors() -> void:
+	if _wall_mat == null:
+		return
+	var tint: Array = LEVEL_TINTS[_tint_index]
+	_wall_mat.albedo_color = (tint[0] as Color).lerp(Color(0.9, 0.95, 1.0), _flash_amount)
+	_wall_mat.emission = (tint[1] as Color).lerp(Color(0.55, 0.8, 1.0), _flash_amount)
+	_wall_mat.emission_energy_multiplier = lerpf(0.6, 1.7, _flash_amount)
 
 static func _wall_is_visible(cell: Vector2i) -> bool:
 	for dy in range(-1, 2):

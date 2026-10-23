@@ -42,6 +42,7 @@ godot --headless -s res://tests/GhostProbe.gd
 
 # Gate 3 - visual check (real window, auto-quit)
 godot --path . --position 100,100 -- --capture /tmp/shot.png --frames 120 --demo
+godot --path . --position 100,100 -- --capture /tmp/title.png --frames 60 --state title
 ```
 
 Dev hooks live in `scripts/Main.gd`:
@@ -51,6 +52,7 @@ Dev hooks live in `scripts/Main.gd`:
 | `--capture <path> --frames N` | render N frames, write a PNG, exit 0 |
 | `--demo` | left-hand-rule autopilot (attract mode) |
 | `--frighten` | open the frightened window at start (screenshot aid) |
+| `--state <name>` | force `title`, `ready`, `dying`, `clear` or `over` for a shot |
 
 `--capture` makes screenshots reproducible, so reviewers can re-render a PR's
 images from the branch itself.

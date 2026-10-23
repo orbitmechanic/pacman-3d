@@ -32,6 +32,7 @@ var mover: GridMover
 var state: State = State.IN_HOUSE
 var game: Game
 var pac: Pacman
+var speed_scale := 1.0
 var rng := RandomNumberGenerator.new()
 
 var _release_left := 0.0
@@ -92,15 +93,17 @@ func tick(delta: float) -> void:
 	mover.tick(delta)
 
 func current_speed() -> float:
+	var base := SPEED
 	match state:
 		State.EATEN:
-			return EATEN_SPEED
+			base = EATEN_SPEED
 		State.LEAVING:
-			return LEAVING_SPEED
+			base = LEAVING_SPEED
 		State.IN_HOUSE:
-			return 0.0
+			base = 0.0
 		_:
-			return FRIGHTENED_SPEED if _frightened() else SPEED
+			base = FRIGHTENED_SPEED if _frightened() else SPEED
+	return base * speed_scale
 
 func is_dangerous() -> bool:
 	return state == State.ROAMING and not _frightened()
