@@ -1,7 +1,7 @@
 # Architecture
 
-Status: **maze + board render implemented** (PR #1). Movement, ghosts, and game
-states are in progress. This document evolves with each merged PR; keep
+Status: **maze + board + Pac-Man movement implemented** (PRs #1-#2). Ghosts,
+scoring, and game states are in progress. This document evolves with each merged PR; keep
 sections in sync with the code.
 
 ## Design pillars
@@ -22,8 +22,9 @@ sections in sync with the code.
 | --- | --- |
 | `scripts/MazeData.gd` | 28×31 maze as ASCII strings; tile queries, wrap logic |
 | `scripts/MazeView.gd` | builds the 3D board (floor, walls, dots) from MazeData |
-| `scripts/GridMover.gd` | shared tile-to-tile movement with interpolation |
-| `scripts/Pacman.gd` | input buffering, chomp animation, eaten/eating signals |
+| `scripts/GridMover.gd` | shared tile-to-tile movement, tunnel wrap, instant reversal (done) |
+| `scripts/Pacman.gd` | input buffering, chomp animation, wedge mouth facing travel (done) |
+| `scripts/PacMesh.gd` | generated sphere with a mouth wedge (SphereMesh has no phi sweep in 4.x) |
 | `scripts/Ghost.gd` | chase/scatter/frightened/eaten state machine |
 | `scripts/Main.gd` | game state machine, score/lives/level, HUD, camera |
 | `tests/*.gd` | headless `SceneTree` probes: logic assertions + screenshots |
