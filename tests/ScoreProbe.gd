@@ -17,6 +17,7 @@ func _initialize() -> void:
 	var level_label: Label = main.get_node("UI/Level")
 	pac.set_physics_process(false)
 	game.set_process(false)
+	game.set_physics_process(false)
 	var mover := pac.mover
 	mover.tiles_per_second = 10.0
 	var failures: Array[String] = []

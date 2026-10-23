@@ -10,7 +10,10 @@ func _initialize() -> void:
 	await process_frame
 
 	var pac: Pacman = main.get_node("Pacman")
+	var game: Game = main.get_node("Game")
 	pac.set_physics_process(false)
+	game.set_process(false)
+	game.set_physics_process(false)
 	var mover := pac.mover
 	var failures: Array[String] = []
 

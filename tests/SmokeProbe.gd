@@ -14,7 +14,9 @@ func _initialize() -> void:
 	for node_path in [
 		"Camera3D", "DirectionalLight3D", "WorldEnvironment",
 		"MazeView", "MazeView/Floor", "MazeView/Walls", "MazeView/Dots",
-		"UI/Title",
+		"Pacman", "Ghosts", "Ghosts/Blinky", "Ghosts/Pinky",
+		"Ghosts/Inky", "Ghosts/Clyde", "UI/Title", "UI/Score", "UI/Lives",
+		"UI/Level", "UI/GameOver",
 	]:
 		if main.get_node_or_null(node_path) == null:
 			failures.append(node_path)
