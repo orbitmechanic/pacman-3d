@@ -8,12 +8,16 @@ extends Node
 ## more than one actor.
 
 signal score_changed(score: int)
+signal high_score_changed(value: int)
 signal level_changed(level: int)
 signal frightened_changed(active: bool)
 signal lives_changed(lives: int)
 signal ghost_mode_changed(mode: int)
 signal ghost_eaten(points: int)
+signal dot_eaten
+signal pellet_eaten
 signal state_changed(state: int)
+signal paused_changed(paused: bool)
 signal game_over
 
 enum GhostMode { SCATTER, CHASE }
@@ -31,13 +35,18 @@ const GHOST_CHAIN := [200, 400, 800, 1600]
 const WAVE_DURATIONS := [7.0, 20.0, 7.0, 20.0, 5.0, 20.0, 5.0]
 const SPEED_STEP := 0.06
 const MAX_SPEED_SCALE := 1.35
+const SAVE_PATH := "user://pacman3d.cfg"
 
 var score := 0
+var high_score := 0
 var level := 1
 var lives := START_LIVES
 var frightened_left := 0.0
 var ghost_mode: GhostMode = GhostMode.SCATTER
 var state: State = State.TITLE
+var paused := false
+## Headless probes must not leave a high score behind in the user directory.
+var persist_scores := true
 
 var pac: Pacman
 var maze: MazeView
@@ -54,22 +63,29 @@ func setup(pac_node: Pacman, maze_node: MazeView, ghost_nodes: Array[Ghost]) -> 
 	pac = pac_node
 	maze = maze_node
 	ghosts = ghost_nodes
+	persist_scores = DisplayServer.get_name() != "headless"
+	_load_high_score()
 	pac.arrived.connect(_on_pac_arrived)
 	for g in ghosts:
 		g.setup(self, pac)
 	state = State.TITLE
+	paused = false
 	_freeze_all(true)
 	lives_changed.emit(lives)
+	high_score_changed.emit(high_score)
 	state_changed.emit(state)
 
 ## New run from the title screen or the game-over prompt. Also the restart
 ## path used by tests and the attract-mode demo.
 func start_game() -> void:
+	if score > 0:
+		save_high_score()
 	score = 0
 	level = 1
 	lives = START_LIVES
 	frightened_left = 0.0
 	_chain = 0
+	paused = false
 	maze.reset_food()
 	pac.respawn()
 	for g in ghosts:
@@ -89,17 +105,31 @@ func speed_scale() -> float:
 	return minf(1.0 + SPEED_STEP * (level - 1), MAX_SPEED_SCALE)
 
 func _process(delta: float) -> void:
+	if paused:
+		return
 	tick_timers(delta)
 
 func _physics_process(delta: float) -> void:
-	if state != State.PLAYING:
+	if paused or state != State.PLAYING:
 		return
 	for g in ghosts:
 		g.tick(delta)
 	resolve_collisions()
 
+## Freeze the run without leaving PLAYING. Only meaningful while playing, so
+## the title, death and level-clear screens keep their own timing.
+func set_paused(value: bool) -> void:
+	if state != State.PLAYING or paused == value:
+		return
+	paused = value
+	_freeze_all(paused)
+	pac.paused = paused
+	paused_changed.emit(paused)
+
 ## Public so headless probes can advance timers deterministically.
 func tick_timers(delta: float) -> void:
+	if paused:
+		return
 	match state:
 		State.READY:
 			_ready_left -= delta
@@ -163,6 +193,7 @@ func begin_level_clear() -> void:
 
 func _enter_ready(seconds: float) -> void:
 	state = State.READY
+	paused = false
 	_ready_left = seconds
 	_freeze_all(true)
 	state_changed.emit(state)
@@ -174,6 +205,7 @@ func _enter_playing() -> void:
 
 func _finish_death() -> void:
 	if lives <= 0:
+		save_high_score()
 		state = State.GAME_OVER
 		state_changed.emit(state)
 		game_over.emit()
@@ -201,8 +233,10 @@ func _on_pac_arrived(cell: Vector2i) -> void:
 		return
 	if maze.eat_dot(cell):
 		_add_score(DOT_SCORE)
+		dot_eaten.emit()
 	elif maze.eat_pellet(cell):
 		_add_score(PELLET_SCORE)
+		pellet_eaten.emit()
 		_frighten()
 
 	if maze.food_remaining() == 0:
@@ -249,7 +283,28 @@ func _tick_waves(delta: float) -> void:
 
 func _add_score(amount: int) -> void:
 	score += amount
+	if score > high_score:
+		high_score = score
+		high_score_changed.emit(high_score)
 	score_changed.emit(score)
+
+## Persist the best score across sessions. Called when a run ends and when the
+## window closes; writing on every dot would hammer the disk for no benefit.
+func save_high_score() -> void:
+	if high_score <= 0 or not persist_scores:
+		return
+	var config := ConfigFile.new()
+	config.set_value("score", "high", high_score)
+	config.save(SAVE_PATH)
+
+func _load_high_score() -> void:
+	var config := ConfigFile.new()
+	if config.load(SAVE_PATH) == OK:
+		high_score = maxi(0, int(config.get_value("score", "high", 0)))
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_CLOSE_REQUEST or what == NOTIFICATION_APPLICATION_PAUSED:
+		save_high_score()
 
 func _reset_waves() -> void:
 	ghost_mode = GhostMode.SCATTER

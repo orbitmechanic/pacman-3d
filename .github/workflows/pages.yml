@@ -24,6 +24,7 @@ jobs:
         uses: chickensoft-games/setup-godot@v2
         with:
           version: 4.7.2
+          use-dotnet: false
 
       - name: Cache web export templates
         uses: actions/cache@v4
@@ -50,7 +51,7 @@ jobs:
 
       - name: Gate 2 - probes
         run: |
-          for probe in Smoke Maze Pac Score Ghost; do
+          for probe in Smoke Maze Pac Score Ghost Mobile; do
             godot --headless -s "res://tests/${probe}Probe.gd"
           done
 

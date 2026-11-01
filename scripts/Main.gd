@@ -29,6 +29,12 @@ const TITLE_FOV := 58.0
 @onready var clear_label: Label = $UI/LevelClear
 @onready var game_over_label: Label = $UI/GameOver
 @onready var game_over_hint: Label = $UI/GameOverHint
+@onready var high_label: Label = $UI/High
+@onready var paused_label: Label = $UI/Paused
+@onready var touch_pad: TouchPad = $UI/TouchPad
+@onready var sfx: Sfx = $Sfx
+@onready var title_prompt: Label = $UI/TitleScreen/Center/Prompt
+@onready var title_controls: Label = $UI/TitleScreen/Center/Controls
 
 var _demo := false
 var _cam_base := PLAY_POS
@@ -47,11 +53,23 @@ func _ready() -> void:
 		if child is Ghost:
 			ghost_nodes.append(child)
 	game.score_changed.connect(_on_score_changed)
+	game.high_score_changed.connect(_on_high_score_changed)
 	game.level_changed.connect(_on_level_changed)
 	game.lives_changed.connect(_on_lives_changed)
 	game.state_changed.connect(_on_state_changed)
+	game.paused_changed.connect(_on_paused_changed)
 	game.game_over.connect(_on_game_over)
 	game.setup(pac, maze, ghost_nodes)
+	sfx.bind(game)
+	touch_pad.steered.connect(_on_touch_steer)
+	touch_pad.start_pressed.connect(_on_touch_start)
+	touch_pad.pause_pressed.connect(_on_touch_pause)
+	_on_high_score_changed(game.high_score)
+	if touch_pad.active:
+		title_prompt.text = "TAP TO START"
+		title_controls.text = "SWIPE OR USE THE PAD TO MOVE"
+	else:
+		title_controls.text = "WASD / ARROWS / GAMEPAD TO MOVE"
 	pac.arrived.connect(_on_pac_arrived)
 	if args.has("--state"):
 		_apply_state_hook(args[args.find("--state") + 1])
@@ -77,6 +95,8 @@ func _process(delta: float) -> void:
 	if Input.is_action_just_pressed("start"):
 		if game.state == Game.State.TITLE or game.state == Game.State.GAME_OVER:
 			game.start_game()
+	if Input.is_action_just_pressed("pause") and game.state == Game.State.PLAYING:
+		game.set_paused(not game.paused)
 
 func _update_camera(delta: float) -> void:
 	var t := 1.0 - exp(-3.2 * delta)
@@ -109,6 +129,9 @@ func _on_state_changed(state: int) -> void:
 	game_over_label.visible = state == Game.State.GAME_OVER
 	game_over_hint.visible = state == Game.State.GAME_OVER
 	title.visible = state != Game.State.TITLE
+	touch_pad.set_in_play(state == Game.State.READY or state == Game.State.PLAYING)
+	paused_label.visible = false
+	touch_pad.set_paused(false)
 	_state_time = 0.0
 	if state == Game.State.TITLE:
 		_cam_pos = TITLE_POS
@@ -123,6 +146,33 @@ func _on_state_changed(state: int) -> void:
 
 func _on_score_changed(score: int) -> void:
 	score_label.text = "SCORE %d" % score
+
+func _on_high_score_changed(value: int) -> void:
+	high_label.text = "HIGH %d" % value
+
+func _on_paused_changed(value: bool) -> void:
+	paused_label.visible = value
+	touch_pad.set_paused(value)
+
+func _on_touch_steer(direction: Vector2i) -> void:
+	if game.paused:
+		return
+	if game.state == Game.State.READY or game.state == Game.State.PLAYING:
+		pac.steer(direction)
+
+func _on_touch_start() -> void:
+	if game.state == Game.State.TITLE or game.state == Game.State.GAME_OVER:
+		game.start_game()
+
+func _on_touch_pause() -> void:
+	if game.state == Game.State.PLAYING:
+		game.set_paused(not game.paused)
+
+func _notification(what: int) -> void:
+	# Losing focus mid-run should not let a ghost eat a parked Pac-Man.
+	if what == NOTIFICATION_APPLICATION_FOCUS_OUT:
+		if game != null and game.state == Game.State.PLAYING and not game.paused:
+			game.set_paused(true)
 
 func _on_level_changed(level: int) -> void:
 	level_label.text = "LEVEL %d" % level

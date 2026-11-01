@@ -15,6 +15,7 @@ jobs:
         uses: chickensoft-games/setup-godot@v2
         with:
           version: 4.7.2
+          use-dotnet: false
 
       - name: Gate 1 - import
         run: godot --headless --import
@@ -36,3 +37,6 @@ jobs:
 
       - name: Gate 2 - ghost behaviour probe
         run: godot --headless -s res://tests/GhostProbe.gd
+
+      - name: Gate 2 - mobile, pause, high-score and audio probe
+        run: godot --headless -s res://tests/MobileProbe.gd

@@ -3,12 +3,12 @@
 [![CI](https://github.com/orbitmechanic/pacman-3d/actions/workflows/ci.yml/badge.svg)](https://github.com/orbitmechanic/pacman-3d/actions/workflows/ci.yml)
 [![Pages](https://github.com/orbitmechanic/pacman-3d/actions/workflows/pages.yml/badge.svg)](https://github.com/orbitmechanic/pacman-3d/actions/workflows/pages.yml)
 
-**▶ [Play in your browser](https://orbitmechanic.github.io/pacman-3d/)** — no install, keyboard only.
+**▶ [Play in your browser](https://orbitmechanic.github.io/pacman-3d/)** — no install. Desktop, tablet and phone: keyboard, gamepad, or touch.
 
 A 3D take on the classic maze chase: munch dots, dodge ghosts, grab power
 pellets, flip the hunt — built from scratch in **Godot 4.7** (GDScript, GL
-Compatibility renderer). No external assets: the maze, characters, and
-effects are procedural geometry and code.
+Compatibility renderer). No external assets: the maze, characters, effects and
+sound are procedural geometry and code.
 
 ![Title screen](docs/screenshots/title.png)
 
@@ -17,18 +17,25 @@ effects are procedural geometry and code.
 
 ## How to play
 
-| Goal | Details |
-| --- | --- |
-| Start / restart | `Enter` or `Space` |
-| Move | `WASD` or arrow keys |
+| Goal | Keyboard | Gamepad | Touch |
+| --- | --- | --- | --- |
+| Start / restart | `Enter` or `Space` | `A` | Tap anywhere, or the ▶ button |
+| Move | `WASD` or arrow keys | D-pad or left stick | Swipe, or the on-screen D-pad |
+| Pause / resume | `Esc` or `P` | `Start` | ❚❚ button |
 | Eat dots | +10 each; clear the maze to win the level |
 | Power pellet | +50; ghosts turn blue and flee — eat them for 200/400/800/1600 |
 | Ghost touch | lose a life (3 pucks in the HUD) |
 | Level up | each cleared board re-tints the maze and speeds the game up |
 | Tunnel | the middle row wraps around both sides |
+| High score | saved on the device and shown under the title |
+
+The touch layout appears only on touch clients: an on-screen D-pad lower left,
+a start/pause button lower right, and swipe-anywhere steering. The game pauses
+itself when the tab or app loses focus.
 
 ![Gameplay](docs/screenshots/ghosts.png)
 ![Frightened ghosts](docs/screenshots/frightened.png)
+![Touch controls](docs/screenshots/touch.png)
 
 ## Running locally
 
@@ -43,8 +50,15 @@ Web builds (thread support off, so any static host works):
 
 ```bash
 mkdir -p build/web
+godot --headless --import
 godot --headless --export-release "Web" build/web/index.html
 python3 -m http.server 8060 -d build/web   # http://127.0.0.1:8060
+```
+
+To exercise the touch path on a desktop browser, add the dev hook:
+
+```bash
+godot --path . -- --touch-controls
 ```
 
 ## Development
@@ -56,6 +70,17 @@ python3 -m http.server 8060 -d build/web   # http://127.0.0.1:8060
   [CONTRIBUTING.md](CONTRIBUTING.md#validation-gates).
 - States and dev hooks: [`--demo`, `--state`, `--capture`](CONTRIBUTING.md#validation-gates)
   make every screen reproducible from a clean checkout.
+
+### What's in the box
+
+- 28×31 arcade maze rendered as instanced 3D geometry, with a wrap-around tunnel.
+- Four ghosts with scatter/chase waves, house release, frightened wandering and
+  eaten-eyes return trips.
+- Title, ready, playing, dying, level-clear and game-over states with camera
+  work and procedural HUD.
+- Touch controls, gamepad bindings, pause, and a persisted high score.
+- Procedural audio: chomp, power pellet, frightened wail, ghost eaten, death,
+  level clear and game over — all synthesised from code at start-up.
 
 ## License
 

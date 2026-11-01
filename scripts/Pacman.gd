@@ -17,6 +17,7 @@ const CHOMP_RATE := 16.0
 
 var mover: GridMover
 var desired_dir := Vector2i.ZERO
+var paused := false
 
 var _chomp := 0.0
 var _gap := 0.0
@@ -33,14 +34,15 @@ func _ready() -> void:
 	position = mover.world_position()
 
 func _physics_process(delta: float) -> void:
-	if _death_t < 0.0 and Input.is_action_just_pressed("move_up"):
-		steer(Vector2i.UP)
-	elif _death_t < 0.0 and Input.is_action_just_pressed("move_down"):
-		steer(Vector2i.DOWN)
-	elif _death_t < 0.0 and Input.is_action_just_pressed("move_left"):
-		steer(Vector2i.LEFT)
-	elif _death_t < 0.0 and Input.is_action_just_pressed("move_right"):
-		steer(Vector2i.RIGHT)
+	if _death_t < 0.0 and not paused:
+		if Input.is_action_just_pressed("move_up"):
+			steer(Vector2i.UP)
+		elif Input.is_action_just_pressed("move_down"):
+			steer(Vector2i.DOWN)
+		elif Input.is_action_just_pressed("move_left"):
+			steer(Vector2i.LEFT)
+		elif Input.is_action_just_pressed("move_right"):
+			steer(Vector2i.RIGHT)
 	mover.tick(delta)
 
 func _process(delta: float) -> void:
@@ -62,6 +64,7 @@ func play_death() -> void:
 
 func respawn() -> void:
 	desired_dir = Vector2i.ZERO
+	paused = false
 	_death_t = -1.0
 	body.visible = true
 	body.scale = Vector3.ONE
