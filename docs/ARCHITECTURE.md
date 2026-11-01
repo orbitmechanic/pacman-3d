@@ -1,7 +1,8 @@
 # Architecture
 
-Status: **playable v0.1.0** — maze, Pac-Man, scoring, ghosts, lives and the
-full title → play → death / level-clear → game-over loop (PRs #1-#5). This
+Status: **playable v1.0** — maze, Pac-Man, scoring, ghosts, lives, the full
+title → play → death / level-clear → game-over loop (PRs #1-#5), plus touch and
+gamepad input, procedural audio, pause and a persisted high score. This
 document evolves with each merged PR; keep sections in sync with the code.
 
 ## Design pillars
@@ -31,8 +32,10 @@ document evolves with each merged PR; keep sections in sync with the code.
 | `scripts/PacMesh.gd` | generated sphere with a mouth wedge (`SphereMesh` has no phi sweep in 4.x) |
 | `scripts/Ghost.gd` | one ghost: house release, target selection, frightened wandering, eaten return |
 | `scripts/GhostMesh.gd` | generated ghost body: dome, sides, scalloped hem |
-| `scripts/Game.gd` | score, levels, frightened window, scatter/chase waves, collisions, lives, game over |
-| `scripts/Main.gd` | scene wiring, HUD updates, dev hooks (capture, demo, frighten) |
+| `scripts/Game.gd` | score, high score, levels, frightened window, scatter/chase waves, collisions, lives, pause, game over |
+| `scripts/Main.gd` | scene wiring, HUD updates, camera, touch/gamepad glue, dev hooks (capture, demo, frighten) |
+| `scripts/TouchPad.gd` | on-screen D-pad, action button, swipe steering for touch clients |
+| `scripts/Sfx.gd` | procedural audio bank and the signal-driven mixer |
 | `scripts/LivesDisplay.gd` | procedural remaining-lives pucks |
 | `tests/*.gd` | headless `SceneTree` probes: logic assertions + deterministic state checks |
 
@@ -121,6 +124,49 @@ Presentation details live outside the state machine: `MazeView` owns the wall
 palette (one colour per level, `set_flash_amount`) and `LivesDisplay` draws
 the remaining-life pucks with `_draw()`.
 
+## Input
+
+Movement is polled from the action map in `Pacman._physics_process`, so every
+source feeds the same `steer()` path:
+
+- **Keyboard** — `WASD` and the arrow keys.
+- **Gamepad** — the left stick (axes 0/1), the D-pad (buttons 11-14), `A` to
+  start and `Start` to pause. All bindings live in `project.godot`; no code
+  branches on the device.
+- **Touch** — `TouchPad` draws a D-pad and an action button in the stretched
+  1280×720 canvas and emits directions straight into `Pacman.steer()`. A drag
+  that starts in the empty play field is turned into a swipe, so the player can
+  steer without finding a button. The pad only becomes visible when
+  `TouchPad.is_mobile_client()` reports a touch client (UA/touch-point check on
+  web, `DisplayServer.is_touchscreen_available()` natively).
+  `TouchPad.force`, `--touch-controls` and `TOUCH_CONTROLS=1` let reviewers and
+  probes exercise the path on a desktop.
+
+Pause is a game-level flag rather than `SceneTree.paused`: `Game.set_paused()`
+freezes both movers, stops timer ticks and the audio loops, and leaves the HUD
+available. `Main` pauses automatically when the app loses focus.
+
+## Audio
+
+`Sfx` owns a bank of ten `AudioStreamWAV` resources synthesised in `_ready()`
+(16-bit mono, 22.05 kHz). Square, triangle, sine and saw oscillators plus an
+attack/decay envelope are enough for the chomp pair, pellet sweep, ghost-eaten
+arpeggio, death glissando, level-clear fanfare, ready and game-over jingles,
+and the siren / frightened loops. Loops are built with silent head and tail so
+the seam never clicks.
+
+Nothing in `Game` calls the mixer. `Sfx.bind(game)` subscribes to `dot_eaten`,
+`pellet_eaten`, `ghost_eaten`, `state_changed`, `frightened_changed` and
+`paused_changed`; the same signals keep the headless probes audio-free.
+
+## Persistence
+
+The high score lives in `user://pacman3d.cfg` (`ConfigFile`, key
+`score/high`). It is updated in memory as points are scored and written only
+when a run ends, a new run begins, or the app is backgrounded, so a dot does
+not hit the disk. Headless probes set `Game.persist_scores = false` so CI
+never writes a user file.
+
 ## Shipping
 
 The same project ships to desktop and the browser:
@@ -133,9 +179,11 @@ The same project ships to desktop and the browser:
   engine's `.wasm` carrying the weight (gzip on the host handles the rest).
 - `export_presets.cfg` excludes `tests/` and `docs/` from the package so
   probes and documentation never reach players.
-- `.github/workflows/pages.yml` gates on the probes, exports, and deploys to
-  GitHub Pages (`https://orbitmechanic.github.io/pacman-3d/`). Export
-  templates are cached between runs.
+- `.github/workflows/pages.yml` gates on the probes, exports with the
+  **standard** Godot build (`use-dotnet: false` — the .NET editor cannot export
+  to Web in Godot 4), and deploys to GitHub Pages
+  (`https://orbitmechanic.github.io/pacman-3d/`). Export templates are cached
+  between runs.
 
 ## Validation
 
@@ -149,3 +197,4 @@ probes:
 | `PacProbe` | walking, walls, tunnel, reversal, door block, arrivals, mouth mesh |
 | `ScoreProbe` | dot/pellet scoring, no double-count, fright timing, level clear |
 | `GhostProbe` | cast/spawns, scatter/chase targets, chooser rules, door release, fright speeds, 200→1600 chain, eaten return, lives, game over |
+| `MobileProbe` | gamepad bindings, touch pad geometry, swipe steering, tap-to-start, pause/resume, high score, audio bank and one-shot playback |

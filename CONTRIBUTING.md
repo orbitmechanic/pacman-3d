@@ -39,10 +39,12 @@ godot --headless -s res://tests/MazeProbe.gd
 godot --headless -s res://tests/PacProbe.gd
 godot --headless -s res://tests/ScoreProbe.gd
 godot --headless -s res://tests/GhostProbe.gd
+godot --headless -s res://tests/MobileProbe.gd
 
 # Gate 3 - visual check (real window, auto-quit)
 godot --path . --position 100,100 -- --capture /tmp/shot.png --frames 120 --demo
 godot --path . --position 100,100 -- --capture /tmp/title.png --frames 60 --state title
+godot --path . --position 100,100 -- --capture /tmp/touch.png --frames 60 --touch-controls
 ```
 
 Dev hooks live in `scripts/Main.gd`:
@@ -53,9 +55,13 @@ Dev hooks live in `scripts/Main.gd`:
 | `--demo` | left-hand-rule autopilot (attract mode) |
 | `--frighten` | open the frightened window at start (screenshot aid) |
 | `--state <name>` | force `title`, `ready`, `dying`, `clear` or `over` for a shot |
+| `--touch-controls` | force the touch pad on (phone layout on a desktop) |
+| `--no-touch-controls` | force the touch pad off |
 
 `--capture` makes screenshots reproducible, so reviewers can re-render a PR's
-images from the branch itself.
+images from the branch itself. New input or audio behaviour belongs in
+`tests/MobileProbe.gd`; new gameplay rules belong in the matching gameplay
+probe.
 
 ### Web build
 
